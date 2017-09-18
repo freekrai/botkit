@@ -65,6 +65,15 @@ var controller = Botkit.consolebot({
 
 var bot = controller.spawn();
 
+/*
+controller.setupWebserver(process.env.port || 3000, function(err, server) {
+    server.get('/', function(req, res) {
+        res.send(':)');
+    });
+    controller.createWebhookEndpoints(server, bot);
+});
+*/
+
 controller.hears(['hello', 'hi'], 'message_received', function(bot, message) {
 
     controller.storage.users.get(message.user, function(err, user) {
@@ -74,6 +83,16 @@ controller.hears(['hello', 'hi'], 'message_received', function(bot, message) {
             bot.reply(message, 'Hello.');
         }
     });
+});
+
+controller.hears(['color'], 'message_received', function(bot, message) {
+	bot.startConversation(message, function(err, convo) {
+		convo.say('This is an example of using convo.ask with a single callback.');
+		convo.ask('What is your favorite color?', function(response, convo) {
+			convo.say('Cool, I like ' + response.text + ' too!');
+			convo.next();
+		});
+	});
 });
 
 controller.hears(['call me (.*)', 'my name is (.*)'], 'message_received', function(bot, message) {
@@ -159,8 +178,65 @@ controller.hears(['what is my name', 'who am i'], 'message_received', function(b
     });
 });
 
+controller.hears(['feelings'], 'message_received', function(bot,message) {
 
-controller.hears(['shutdown'], 'message_received', function(bot, message) {
+  // start a conversation to handle this response.
+  bot.startConversation(message,function(err,convo) {
+
+    convo.addQuestion('How are you?',function(response,convo) {
+
+      convo.say('Cool, you said: ' + response.text);
+      convo.next();
+
+    },{},'default');
+
+  })
+});
+
+controller.hears(['question me'], 'message_received', function(bot,message) {
+
+  // start a conversation to handle this response.
+  bot.startConversation(message,function(err,convo) {
+
+    convo.addQuestion('Shall we proceed Say YES, NO or DONE to quit.',[
+      {
+        pattern: 'done',
+        callback: function(response,convo) {
+          convo.say('OK you are done!');
+          convo.next();
+        }
+      },
+      {
+        pattern: bot.utterances.yes,
+        callback: function(response,convo) {
+          convo.say('Great! I will continue...');
+          // do something else...
+          convo.next();
+
+        }
+      },
+      {
+        pattern: bot.utterances.no,
+        callback: function(response,convo) {
+          convo.say('Perhaps later.');
+          // do something else...
+          convo.next();
+        }
+      },
+      {
+        default: true,
+        callback: function(response,convo) {
+          // just repeat the question
+          convo.repeat();
+          convo.next();
+        }
+      }
+    ],{},'default');
+
+  })
+});
+
+controller.hears(['shutdown','goodbye'], 'message_received', function(bot, message) {
 
     bot.startConversation(message, function(err, convo) {
 
